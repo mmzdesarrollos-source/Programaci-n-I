@@ -26,10 +26,16 @@ if (!localStorage.getItem('turnos')) {
     localStorage.setItem('turnos', JSON.stringify([]));
 }
 
+if (!localStorage.getItem('bloqueos')) {
+    localStorage.setItem('bloqueos', JSON.stringify([]));
+}
+
 function getUsuarios() { return JSON.parse(localStorage.getItem('usuarios')) || []; }
 function saveUsuarios(usuarios) { localStorage.setItem('usuarios', JSON.stringify(usuarios)); }
 function getTurnos() { return JSON.parse(localStorage.getItem('turnos')) || []; }
 function saveTurnos(turnos) { localStorage.setItem('turnos', JSON.stringify(turnos)); }
+function getBloqueos() { return JSON.parse(localStorage.getItem('bloqueos')) || []; }
+function saveBloqueos(bloqueos) { localStorage.setItem('bloqueos', JSON.stringify(bloqueos)); }
 function getCurrentUser() { return JSON.parse(localStorage.getItem('currentUser')); }
 function setCurrentUser(user) { localStorage.setItem('currentUser', JSON.stringify(user)); }
 
@@ -67,7 +73,7 @@ let currentDate = new Date(); // Fecha actual para mostrar el mes
 let selectedDateString = null; // Ej: "2026-10-15"
 let selectedHora = null; // Ej: "09:00"
 
-function renderCalendar(elementId, onDateSelect, isEmpleado = false) {
+function renderCalendar(elementId, onDateSelect, mode = 'vecino') {
     const container = document.getElementById(elementId);
     if(!container) return;
 
@@ -102,14 +108,16 @@ function renderCalendar(elementId, onDateSelect, isEmpleado = false) {
 
     const todayStr = new Date().toISOString().split('T')[0];
 
+    const bloqueosDelMes = getBloqueos();
     for (let i = 1; i <= daysInMonth; i++) {
         // Formato YYYY-MM-DD
         const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
         const isPast = dateStr < todayStr;
+        const diaCompletamenteBloqueado = bloqueosDelMes.some(b => b.fecha === dateStr && b.hora === 'todas');
         
-        // Si es vecino, no dejar elegir días pasados
-        if(isPast && !isEmpleado) {
-            html += `<div class="calendar-day disabled">${i}</div>`;
+        // Si es vecino, no dejar elegir días pasados o completamente bloqueados
+        if((isPast || diaCompletamenteBloqueado) && mode === 'vecino') {
+            html += `<div class="calendar-day disabled" title="${diaCompletamenteBloqueado ? 'Día bloqueado o feriado' : ''}">${i}</div>`;
         } else {
             const isSelectedClass = (selectedDateString === dateStr) ? 'selected' : '';
             html += `<div class="calendar-day ${isSelectedClass}" data-date="${dateStr}">${i}</div>`;
@@ -123,13 +131,13 @@ function renderCalendar(elementId, onDateSelect, isEmpleado = false) {
     document.getElementById('btn-prev-month').addEventListener('click', (e) => {
         e.preventDefault();
         currentDate.setMonth(currentDate.getMonth() - 1);
-        renderCalendar(elementId, onDateSelect, isEmpleado);
+        renderCalendar(elementId, onDateSelect, mode);
     });
     
     document.getElementById('btn-next-month').addEventListener('click', (e) => {
         e.preventDefault();
         currentDate.setMonth(currentDate.getMonth() + 1);
-        renderCalendar(elementId, onDateSelect, isEmpleado);
+        renderCalendar(elementId, onDateSelect, mode);
     });
 
     // Listeners para seleccionar días
@@ -138,13 +146,13 @@ function renderCalendar(elementId, onDateSelect, isEmpleado = false) {
         day.addEventListener('click', () => {
             selectedDateString = day.getAttribute('data-date');
             selectedHora = null; // Reseteamos hora al cambiar de día
-            renderCalendar(elementId, onDateSelect, isEmpleado);
+            renderCalendar(elementId, onDateSelect, mode);
             if(onDateSelect) onDateSelect(selectedDateString);
         });
     });
 }
 
-function renderSlots(elementId, dateStr, isEmpleado = false, onSlotSelect = null) {
+function renderSlots(elementId, dateStr, mode = 'vecino', onSlotSelect = null) {
     const container = document.getElementById(elementId);
     if(!container) return;
 
@@ -157,14 +165,39 @@ function renderSlots(elementId, dateStr, isEmpleado = false, onSlotSelect = null
     // Turnos ocupados para este día
     const turnosDelDia = turnos.filter(t => (t.fechaAsignada || t.fecha) === dateStr);
 
-    let html = `<h4>Horarios para ${dateStr}</h4><div class="slots-grid">`;
+    const bloqueos = getBloqueos();
+    const bloqueosDelDia = bloqueos.filter(b => b.fecha === dateStr);
+    const diaCompletoBloqueado = bloqueosDelDia.find(b => b.hora === 'todas');
+
+    let btnHoraText = "Bloquear Horario";
+    if (selectedHora) {
+        const isSelBloqueado = bloqueosDelDia.find(b => b.hora === selectedHora);
+        btnHoraText = isSelBloqueado ? "Desbloquear Horario" : "Bloquear Horario";
+    }
+
+    let html = `<div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px;">
+                    <h4 style="margin:0;">Horarios para ${dateStr}</h4>
+                    ${mode === 'config' ? `
+                    <div style="display: flex; gap: 10px; width: 100%;">
+                        <button id="btn-toggle-hora-${elementId}" class="btn-sm" style="background:var(--regio-secondary); flex: 1; padding: 8px;">${btnHoraText}</button>
+                        <button id="btn-toggle-dia-${elementId}" class="btn-sm" style="background:${diaCompletoBloqueado ? '#718096' : '#dd6b20'}; flex: 1; padding: 8px;">${diaCompletoBloqueado ? 'Desbloquear Día' : 'Bloquear Día'}</button>
+                    </div>
+                    ` : ''}
+                </div>
+                ${mode === 'config' ? '<small style="color:#666; display:block; margin-bottom:10px;">1. Haz clic en un horario para seleccionarlo. 2. Toca "Bloquear Horario".</small>' : ''}
+                <div class="slots-grid">`;
 
     HORARIOS.forEach(hora => {
         const turnoOcupado = turnosDelDia.find(t => (t.horaAsignada || t.hora) === hora);
+        const isBloqueado = diaCompletoBloqueado || bloqueosDelDia.find(b => b.hora === hora);
         
         if (turnoOcupado) {
             // Rojo = Ocupado
             html += `<div class="slot ocupado" data-hora="${hora}" data-id="${turnoOcupado.id}">${hora}</div>`;
+        } else if (isBloqueado) {
+            // Gris = Bloqueado
+            const selectedClass = (selectedHora === hora) ? 'seleccionado' : '';
+            html += `<div class="slot bloqueado ${selectedClass}" data-hora="${hora}">${hora}</div>`;
         } else {
             // Verde = Disponible
             const selectedClass = (selectedHora === hora) ? 'seleccionado' : '';
@@ -174,39 +207,95 @@ function renderSlots(elementId, dateStr, isEmpleado = false, onSlotSelect = null
 
     html += `</div>`;
     
-    if (isEmpleado) {
-        html += `<div id="info-turno" class="info-turno-detalle"></div>`;
+    if (mode === 'atencion') {
+        html += `<div id="info-turno-${elementId}" class="info-turno-detalle"></div>`;
     }
 
     container.innerHTML = html;
+
+    // Listener para bloquear todo el día
+    if (mode === 'config') {
+        const btnDia = document.getElementById(`btn-toggle-dia-${elementId}`);
+        if (btnDia) {
+            btnDia.addEventListener('click', () => {
+                let bl = getBloqueos();
+                if (diaCompletoBloqueado) {
+                    bl = bl.filter(b => !(b.fecha === dateStr && b.hora === 'todas'));
+                } else {
+                    bl.push({ fecha: dateStr, hora: 'todas' });
+                }
+                saveBloqueos(bl);
+                selectedHora = null; // Reset selection
+                renderSlots(elementId, dateStr, mode, onSlotSelect);
+                
+                // Forzamos actualización visual del calendario que lo llamó
+                renderCalendar(elementId.replace('-slots', '-calendar'), (d) => renderSlots(elementId, d, mode, onSlotSelect), mode);
+            });
+        }
+
+        const btnHora = document.getElementById(`btn-toggle-hora-${elementId}`);
+        if (btnHora) {
+            btnHora.addEventListener('click', () => {
+                if (diaCompletoBloqueado) {
+                    alert("El día completo ya está bloqueado. Desbloquealo primero para ajustar horarios individuales.");
+                    return;
+                }
+                if (!selectedHora) {
+                    alert("Por favor, primero hacé clic en el horario que querés bloquear o desbloquear.");
+                    return;
+                }
+
+                let bl = getBloqueos();
+                const yaBloqueado = bl.find(b => b.fecha === dateStr && b.hora === selectedHora);
+                if (yaBloqueado) {
+                    bl = bl.filter(b => !(b.fecha === dateStr && b.hora === selectedHora));
+                } else {
+                    bl.push({fecha: dateStr, hora: selectedHora});
+                }
+                saveBloqueos(bl);
+                renderSlots(elementId, dateStr, mode, onSlotSelect);
+            });
+        }
+    }
 
     // Listeners de los slots
     const slots = container.querySelectorAll('.slot');
     slots.forEach(slot => {
         slot.addEventListener('click', () => {
             const isOcupado = slot.classList.contains('ocupado');
+            const isBloqueadoClass = slot.classList.contains('bloqueado');
             const hora = slot.getAttribute('data-hora');
             
-            if (isEmpleado) {
-                // Empleado puede clickear ocupados para ver info, o disponibles para asignar a alguien
+            if (mode === 'atencion') {
                 if(isOcupado) {
                     const id = slot.getAttribute('data-id');
                     const turno = turnos.find(t => t.id == id);
-                    const infoBox = document.getElementById('info-turno');
-                    infoBox.style.display = 'block';
-                    infoBox.innerHTML = `<strong>Turno Reservado</strong><br>
-                                         Trámite: ${turno.tramite.toUpperCase()}<br>
-                                         Vecino: ${turno.nombre} (DNI: ${turno.dni})<br>
-                                         Estado: <span class="badge ${turno.estado === 'pendiente' ? 'pendiente' : 'atendido'}">${turno.estado}</span><br>
-                                         ${turno.estado === 'pendiente' ? `<button onclick="atenderTurno(${turno.id})" style="margin-top:15px; width:100%;" class="btn-sm">Marcar como Atendido</button>` : ''}`;
+                    const infoBox = document.getElementById(`info-turno-${elementId}`);
+                    if(infoBox) {
+                        infoBox.style.display = 'block';
+                        infoBox.innerHTML = `<strong>Turno Reservado</strong><br>
+                                             Trámite: ${turno.tramite.toUpperCase()}<br>
+                                             Vecino: ${turno.nombre} (DNI: ${turno.dni})<br>
+                                             Estado: <span class="badge ${turno.estado === 'pendiente' ? 'pendiente' : 'atendido'}">${turno.estado}</span><br>
+                                             ${turno.estado === 'pendiente' ? `<button onclick="atenderTurno(${turno.id})" style="margin-top:15px; width:100%;" class="btn-sm">Marcar como Atendido</button>` : ''}`;
+                    }
                 } else {
-                    document.getElementById('info-turno').style.display = 'none';
+                    const infoBox = document.getElementById(`info-turno-${elementId}`);
+                    if(infoBox) infoBox.style.display = 'none';
+                }
+            } else if (mode === 'config') {
+                if(isOcupado) {
+                    alert("Este horario ya está reservado por un vecino, no podés bloquearlo.");
+                } else {
+                    // Seleccionar el horario para poder usar el botón
+                    selectedHora = hora;
+                    renderSlots(elementId, dateStr, mode, onSlotSelect);
                 }
             } else {
-                // Vecino solo puede elegir disponibles
-                if(!isOcupado) {
+                // Vecino
+                if(!isOcupado && !isBloqueadoClass) {
                     selectedHora = hora;
-                    renderSlots(elementId, dateStr, isEmpleado, onSlotSelect); // re-render to apply selection styling
+                    renderSlots(elementId, dateStr, mode, onSlotSelect);
                     if(onSlotSelect) onSlotSelect(hora);
                 }
             }

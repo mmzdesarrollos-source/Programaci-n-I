@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel de Empleado</title>
-    <link rel="stylesheet" href="styles.css?v=3">
+    <link rel="stylesheet" href="styles.css?v=4">
 </head>
 <body>
     <div class="navbar">
@@ -16,13 +16,30 @@
     </div>
     
     <div class="container">
-        <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 style="margin: 0; color: white;">Panel de Control</h2>
+            <button id="btn-toggle-modo" onclick="toggleModoConfig()" style="background-color: var(--regio-primary); color: white; border: 2px solid var(--regio-secondary); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 500;">⚙️ Configurar Días Bloqueados</button>
+        </div>
+
+        <div id="panel-atencion" class="card">
             <h3>Calendario de Turnos (Gestión)</h3>
             <p>Navega por los días. Los horarios en <strong>Rojo</strong> están ocupados por un vecino. Haz clic en ellos para ver los detalles y atender el turno.</p>
             
             <div class="calendar-wrapper">
-                <div id="empleado-calendar" class="calendar-month"></div>
-                <div id="empleado-slots" class="slots-container">
+                <div id="atencion-calendar" class="calendar-month"></div>
+                <div id="atencion-slots" class="slots-container">
+                    <p>Selecciona un día en el calendario para ver los horarios.</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="panel-config" class="card" style="display: none;">
+            <h3>Configuración de Disponibilidad</h3>
+            <p><strong>Exclusivo para modificar horarios:</strong> Haz clic en un día completo o en horarios verdes para <strong>bloquearlos</strong> (sábados, domingos o feriados).</p>
+            
+            <div class="calendar-wrapper">
+                <div id="config-calendar" class="calendar-month"></div>
+                <div id="config-slots" class="slots-container">
                     <p>Selecciona un día en el calendario para ver los horarios.</p>
                 </div>
             </div>
@@ -39,9 +56,30 @@
         </div>
     </div>
 
-    <script src="app.js?v=4"></script>
+    <script src="app.js?v=13"></script>
     <script>
         checkAuth('empleado');
+
+        let modoConfig = false;
+        function toggleModoConfig() {
+            modoConfig = !modoConfig;
+            
+            document.getElementById('panel-atencion').style.display = modoConfig ? 'none' : 'block';
+            document.getElementById('panel-config').style.display = modoConfig ? 'block' : 'none';
+            
+            selectedDateString = null;
+            selectedHora = null;
+            
+            if (modoConfig) {
+                document.getElementById('btn-toggle-modo').innerHTML = "⬅ Volver a Atención";
+                document.getElementById('config-slots').innerHTML = '<p>Selecciona un día en el calendario.</p>';
+                renderCalendar('config-calendar', (dateStr) => renderSlots('config-slots', dateStr, 'config'), 'config');
+            } else {
+                document.getElementById('btn-toggle-modo').innerHTML = "⚙️ Configurar Días Bloqueados";
+                document.getElementById('atencion-slots').innerHTML = '<p>Selecciona un día en el calendario para ver los horarios.</p>';
+                renderCalendar('atencion-calendar', (dateStr) => renderSlots('atencion-slots', dateStr, 'atencion'), 'atencion');
+            }
+        }
 
         function loadListas() {
             const turnos = getTurnos();
@@ -106,24 +144,25 @@
                 loadListas();
                 
                 // Refrescar panel de info si estaba abierto
-                const infoBox = document.getElementById('info-turno');
+                const infoBox = document.getElementById('info-turno-atencion-slots');
                 if(infoBox) {
                     infoBox.innerHTML += `<br><br><span class="badge atendido">Turno Atendido Exitosamente</span>`;
                 }
                 
-                // Refrescar calendario para ver estados actualizados
+                // Refrescar calendarios
                 if(selectedDateString) {
-                    renderSlots('empleado-slots', selectedDateString, true);
+                    renderSlots('atencion-slots', selectedDateString, 'atencion');
+                    renderSlots('config-slots', selectedDateString, 'config');
                 }
             }
         }
 
-        function handleDateSelect(dateStr) {
-            renderSlots('empleado-slots', dateStr, true);
-        }
+        // Inicializar Calendario de Atención (Solo ver y atender)
+        renderCalendar('atencion-calendar', (dateStr) => renderSlots('atencion-slots', dateStr, 'atencion'), 'atencion');
+        
+        // Inicializar Calendario de Configuración (Bloqueos)
+        renderCalendar('config-calendar', (dateStr) => renderSlots('config-slots', dateStr, 'config'), 'config');
 
-        // Inicializar
-        renderCalendar('empleado-calendar', handleDateSelect, true);
         loadListas();
     </script>
 </body>

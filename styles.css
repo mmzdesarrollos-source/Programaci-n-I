@@ -1,0 +1,328 @@
+:root {
+    /* Colores ReGio globales */
+    --regio-primary: #1A365D; /* Azul oscuro elegante */
+    --regio-secondary: #00A3C4; /* Celeste/Cian moderno */
+    --regio-accent: #E2E8F0; /* Fondo claro */
+    --regio-text: #2D3748;
+    --regio-bg: #f4f7f6;
+    --regio-danger: #e53e3e;
+    --regio-success: #38a169;
+}
+
+* {
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+body {
+    background-color: var(--regio-bg);
+    margin: 0;
+    padding: 0;
+    color: var(--regio-text);
+}
+
+/* Navbar */
+.navbar {
+    background: linear-gradient(135deg, var(--regio-primary) 0%, #2A4365 100%);
+    color: white;
+    padding: 20px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.navbar h2 {
+    margin: 0;
+    font-weight: 300;
+    letter-spacing: 1px;
+    color: white;
+}
+
+.navbar button {
+    background-color: transparent;
+    border: 2px solid white;
+    color: white;
+    border-radius: 30px;
+    padding: 8px 20px;
+    margin-left: 15px;
+    font-weight: bold;
+    transition: all 0.3s;
+}
+
+.navbar button:hover {
+    background-color: white;
+    color: var(--regio-primary);
+}
+
+/* Container & Cards */
+.container {
+    max-width: 1000px;
+    margin: 40px auto;
+    padding: 0 20px;
+}
+
+h1, h2, h3, h4 {
+    color: var(--regio-primary);
+}
+
+.card {
+    background: white;
+    padding: 30px;
+    border-radius: 16px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 25px;
+}
+
+.card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: var(--regio-secondary);
+}
+
+.mt-4 {
+    margin-top: 20px;
+}
+
+/* Forms */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: var(--regio-text);
+}
+
+.form-group input, .form-group select {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background: #f8f9fa;
+    transition: all 0.3s;
+}
+
+.form-group input:focus, .form-group select:focus {
+    outline: none;
+    border-color: var(--regio-secondary);
+    box-shadow: 0 0 0 2px rgba(0, 163, 196, 0.2);
+    background: white;
+}
+
+/* Buttons */
+button {
+    background-color: var(--regio-secondary);
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 30px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    transition: all 0.3s;
+}
+
+button:hover {
+    background-color: #00829B;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+}
+
+.btn-sm {
+    padding: 8px 15px;
+    font-size: 14px;
+    background-color: var(--regio-success);
+    border-radius: 20px;
+}
+.btn-sm:hover {
+    background-color: #2f855a;
+}
+
+.error-msg {
+    color: var(--regio-danger);
+    margin-top: 10px;
+}
+
+/* --- CALENDARIO STYLES --- */
+.calendar-wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 30px;
+    margin-top: 25px;
+}
+
+.calendar-month {
+    flex: 1;
+    min-width: 320px;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    overflow: hidden;
+    background: white;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+}
+
+.calendar-header {
+    background: var(--regio-primary);
+    color: white;
+    text-align: center;
+    padding: 15px;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.calendar-header button {
+    background: transparent;
+    box-shadow: none;
+    border: 1px solid rgba(255,255,255,0.5);
+    padding: 5px 15px;
+    margin: 0;
+}
+.calendar-header button:hover {
+    background: rgba(255,255,255,0.2);
+    transform: none;
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    text-align: center;
+    background-color: #fff;
+}
+
+.calendar-day-name {
+    font-weight: 600;
+    padding: 12px 0;
+    background-color: #f7fafc;
+    color: var(--regio-primary);
+    font-size: 14px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.calendar-day {
+    padding: 15px 0;
+    border: 1px solid #f7fafc;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--regio-text);
+}
+
+.calendar-day:hover:not(.disabled) {
+    background-color: rgba(0, 163, 196, 0.1);
+    color: var(--regio-secondary);
+    font-weight: bold;
+}
+
+.calendar-day.selected {
+    background-color: var(--regio-secondary);
+    color: white;
+    font-weight: bold;
+    border-radius: 4px;
+    transform: scale(0.95);
+}
+
+.calendar-day.disabled {
+    color: #cbd5e0;
+    cursor: not-allowed;
+    background-color: #f7fafc;
+}
+
+/* --- SLOTS (HORARIOS) STYLES --- */
+.slots-container {
+    flex: 1;
+    min-width: 320px;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 20px;
+    background-color: white;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+}
+
+.slots-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(85px, 1fr));
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.slot {
+    padding: 10px;
+    text-align: center;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    color: white;
+    transition: all 0.2s;
+}
+
+.slot.disponible {
+    background-color: var(--regio-success); 
+    border: 2px solid transparent;
+}
+.slot.disponible:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.slot.ocupado {
+    background-color: var(--regio-danger); 
+    cursor: not-allowed;
+    opacity: 0.8;
+}
+
+.slot.seleccionado {
+    border: 2px solid var(--regio-primary);
+    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    transform: scale(1.05);
+    background-color: #2f855a;
+}
+
+.info-turno-detalle {
+    margin-top: 20px;
+    padding: 20px;
+    background-color: #ebf8fa;
+    border-left: 5px solid var(--regio-secondary);
+    border-radius: 0 8px 8px 0;
+    display: none;
+    color: var(--regio-primary);
+}
+
+/* Listas */
+.list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.turno-item {
+    padding: 15px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.turno-item:last-child {
+    border-bottom: none;
+}
+.badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: bold;
+    color: white;
+}
+.badge.pendiente {
+    background: #dd6b20;
+}
+.badge.atendido {
+    background: var(--regio-success);
+}

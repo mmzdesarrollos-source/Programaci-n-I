@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solicitar Turno - Vecino</title>
+    <link rel="stylesheet" href="styles.css?v=3">
+</head>
+<body>
+    <div class="navbar">
+        <h2>Solicitud de Turnos</h2>
+        <button onclick="window.location.href='index.html'">Volver al Inicio</button>
+    </div>
+    
+    <div class="container">
+        <div class="card">
+            <h3>Pide tu turno</h3>
+            <form id="turno-form">
+                <div class="form-group">
+                    <label>Nombre y Apellido:</label>
+                    <input type="text" id="nombre-vecino" required>
+                </div>
+                <div class="form-group">
+                    <label>DNI:</label>
+                    <input type="number" id="dni-vecino" required>
+                </div>
+                <div class="form-group">
+                    <label>Trámite / Área:</label>
+                    <select id="tramite" required>
+                        <option value="licencia">Licencia de Conducir</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Selecciona un Día y Horario:</label>
+                    <div class="calendar-wrapper">
+                        <div id="vecino-calendar" class="calendar-month"></div>
+                        <div id="vecino-slots" class="slots-container">
+                            <p>Selecciona un día en el calendario.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit">Confirmar Turno</button>
+                <p id="error-msg" class="error-msg"></p>
+            </form>
+        </div>
+
+        <div class="card mt-4">
+            <h3>Mis turnos recientes</h3>
+            <ul id="mis-turnos-list" class="list"></ul>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        function loadMisTurnos() {
+            const turnos = getTurnos();
+            const list = document.getElementById('mis-turnos-list');
+            list.innerHTML = '';
+            
+            const misUltimos = turnos.slice(-5).reverse();
+            
+            if (misUltimos.length === 0) {
+                list.innerHTML = '<li>No has solicitado turnos aún.</li>';
+                return;
+            }
+
+            misUltimos.forEach(t => {
+                const li = document.createElement('li');
+                const fechaMostrar = t.fechaAsignada || t.fecha;
+                const horaMostrar = t.horaAsignada || t.hora;
+                
+                li.innerHTML = `<strong>${t.tramite.toUpperCase()}</strong> - ${t.nombre} <br> 
+                                <small>Día: ${fechaMostrar} | Hora: ${horaMostrar}</small> <br>
+                                Estado: <span class="badge ${t.estado}">${t.estado}</span>`;
+                list.appendChild(li);
+            });
+        }
+
+        document.getElementById('turno-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const errorP = document.getElementById('error-msg');
+            errorP.textContent = '';
+
+            if(!selectedDateString || !selectedHora) {
+                errorP.textContent = 'Por favor, selecciona un día en el calendario y un horario verde.';
+                return;
+            }
+
+            const nombre = document.getElementById('nombre-vecino').value;
+            const dni = document.getElementById('dni-vecino').value;
+            const tramite = document.getElementById('tramite').value;
+            
+            const turnos = getTurnos();
+            turnos.push({
+                id: Date.now(),
+                nombre,
+                dni,
+                tramite,
+                fecha: selectedDateString,
+                hora: selectedHora,
+                estado: 'pendiente' // El vecino lo pide, pero podemos considerarlo ya ocupado en esa fecha/hora
+            });
+
+            saveTurnos(turnos);
+            alert('¡Turno solicitado con éxito!');
+            
+            document.getElementById('turno-form').reset();
+            selectedDateString = null;
+            selectedHora = null;
+            
+            // Re-render calendario para que se ponga rojo
+            renderCalendar('vecino-calendar', handleDateSelect, false);
+            document.getElementById('vecino-slots').innerHTML = '<p>Selecciona un día en el calendario.</p>';
+            
+            loadMisTurnos();
+        });
+
+        function handleDateSelect(dateStr) {
+            renderSlots('vecino-slots', dateStr, false, (hora) => {
+                // Hora seleccionada por el vecino
+            });
+        }
+
+        // Inicializar Calendario
+        renderCalendar('vecino-calendar', handleDateSelect, false);
+        loadMisTurnos();
+    </script>
+</body>
+</html>

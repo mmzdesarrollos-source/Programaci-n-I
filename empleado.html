@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Empleado</title>
+    <link rel="stylesheet" href="styles.css?v=3">
+</head>
+<body>
+    <div class="navbar">
+        <h2>Atención al Público</h2>
+        <div>
+            <span id="user-info"></span>
+            <button onclick="logout()">Salir</button>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="card">
+            <h3>Calendario de Turnos (Gestión)</h3>
+            <p>Navega por los días. Los horarios en <strong>Rojo</strong> están ocupados por un vecino. Haz clic en ellos para ver los detalles y atender el turno.</p>
+            
+            <div class="calendar-wrapper">
+                <div id="empleado-calendar" class="calendar-month"></div>
+                <div id="empleado-slots" class="slots-container">
+                    <p>Selecciona un día en el calendario para ver los horarios.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <h3>Lista Rápida - Turnos Pendientes</h3>
+            <ul id="turnos-pendientes" class="list"></ul>
+        </div>
+        
+        <div class="card mt-4">
+            <h3>Lista Rápida - Turnos Atendidos</h3>
+            <ul id="turnos-atendidos" class="list"></ul>
+        </div>
+    </div>
+
+    <script src="app.js?v=4"></script>
+    <script>
+        checkAuth('empleado');
+
+        function loadListas() {
+            const turnos = getTurnos();
+            const usuarios = getUsuarios(); // Para buscar los nombres reales
+            const pendientesList = document.getElementById('turnos-pendientes');
+            const atendidosList = document.getElementById('turnos-atendidos');
+            
+            pendientesList.innerHTML = '';
+            atendidosList.innerHTML = '';
+            
+            turnos.forEach(t => {
+                const li = document.createElement('li');
+                li.className = 'turno-item';
+                
+                const fechaMostrar = t.fechaAsignada || t.fecha || '';
+                const horaMostrar = t.horaAsignada || t.hora || '';
+
+                if (t.estado === 'pendiente') {
+                    li.innerHTML = `
+                        <div>
+                            <strong>${t.tramite.toUpperCase()}</strong> - ${t.nombre} <br>
+                            <small>Día: ${fechaMostrar} | Hora: ${horaMostrar}</small>
+                        </div>
+                        <button class="btn-sm" onclick="atenderTurno(${t.id})">Marcar como Atendido</button>
+                    `;
+                    pendientesList.appendChild(li);
+                } else {
+                    // Buscar el nombre del empleado que lo atendió
+                    const emp = usuarios.find(u => u.username === t.atendidoPor);
+                    const nombreEmpleado = emp ? (emp.nombre || emp.username) : (t.atendidoPor || 'empleado');
+
+                    li.innerHTML = `
+                        <div>
+                            <strong>${t.tramite.toUpperCase()}</strong> - ${t.nombre} <br>
+                            <small>Atendido el: ${fechaMostrar} a las ${horaMostrar}</small> <br>
+                            <span class="badge atendido">Atendido por ${nombreEmpleado}</span>
+                        </div>
+                    `;
+                    atendidosList.appendChild(li);
+                }
+            });
+            
+            if (pendientesList.children.length === 0) pendientesList.innerHTML = '<li>No hay turnos pendientes.</li>';
+            if (atendidosList.children.length === 0) atendidosList.innerHTML = '<li>Aún no has atendido turnos.</li>';
+        }
+
+        window.atenderTurno = function(id) {
+            const turnos = getTurnos();
+            const currentUser = getCurrentUser();
+            
+            const turnoIndex = turnos.findIndex(t => t.id == id);
+            if (turnoIndex > -1) {
+                turnos[turnoIndex].estado = 'atendido';
+                turnos[turnoIndex].atendidoPor = currentUser.username;
+                // Si nunca se le asignó formalmente, confirmamos la fecha que eligió el vecino
+                if(!turnos[turnoIndex].fechaAsignada) {
+                    turnos[turnoIndex].fechaAsignada = turnos[turnoIndex].fecha;
+                    turnos[turnoIndex].horaAsignada = turnos[turnoIndex].hora;
+                }
+
+                saveTurnos(turnos);
+                loadListas();
+                
+                // Refrescar panel de info si estaba abierto
+                const infoBox = document.getElementById('info-turno');
+                if(infoBox) {
+                    infoBox.innerHTML += `<br><br><span class="badge atendido">Turno Atendido Exitosamente</span>`;
+                }
+                
+                // Refrescar calendario para ver estados actualizados
+                if(selectedDateString) {
+                    renderSlots('empleado-slots', selectedDateString, true);
+                }
+            }
+        }
+
+        function handleDateSelect(dateStr) {
+            renderSlots('empleado-slots', dateStr, true);
+        }
+
+        // Inicializar
+        renderCalendar('empleado-calendar', handleDateSelect, true);
+        loadListas();
+    </script>
+</body>
+</html>

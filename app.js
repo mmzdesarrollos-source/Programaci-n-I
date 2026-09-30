@@ -2,9 +2,11 @@
 
 let usuariosConfig = JSON.parse(localStorage.getItem('usuarios')) || [];
 const adminUser = { username: 'admin', password: '123', role: 'admin', nombre: 'Administrador' };
+const newAdminUser = { username: 'mzanini', password: '123456', role: 'admin', nombre: 'M. Zanini' };
 const demoEmpleado = { username: '31861718', password: '123456', role: 'empleado', nombre: 'Marcos Zanini' };
 
 if (!usuariosConfig.find(u => u.username === 'admin')) usuariosConfig.push(adminUser);
+if (!usuariosConfig.find(u => u.username === 'mzanini')) usuariosConfig.push(newAdminUser);
 
 let emp = usuariosConfig.find(u => u.username === '31861718');
 if (!emp) {

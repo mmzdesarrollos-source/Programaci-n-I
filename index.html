@@ -219,16 +219,38 @@
                     <p>Ingresa al sistema para configurar la disponibilidad de días y horarios, y gestionar la atención al público.</p>
                 </div>
                 
-                <button class="btn-access" id="btn-show-login">
+                <button class="btn-access" id="btn-show-login-emp">
                     <i class="fas fa-sign-in-alt"></i> Acceso Personal
                 </button>
 
-                <div class="login-box" id="login-box">
-                    <form id="login-form">
-                        <input type="text" class="form-control" id="username" placeholder="Usuario" required>
-                        <input type="password" class="form-control" id="password" placeholder="Contraseña" required>
+                <div class="login-box" id="login-box-emp">
+                    <form id="login-form-emp">
+                        <input type="text" class="form-control" id="username-emp" placeholder="Usuario" required>
+                        <input type="password" class="form-control" id="password-emp" placeholder="Contraseña" required>
                         <button type="submit" class="btn-access btn-login">Ingresar al Panel</button>
-                        <p id="login-error" class="error-msg"></p>
+                        <p id="login-error-emp" class="error-msg"></p>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Card Admin -->
+            <div class="profile-card">
+                <div>
+                    <i class="fas fa-cogs profile-icon"></i>
+                    <h2>Administrador</h2>
+                    <p>Gestiona usuarios, permisos, trámites y opciones de configuración avanzada del sistema.</p>
+                </div>
+                
+                <button class="btn-access" id="btn-show-login-admin">
+                    <i class="fas fa-shield-alt"></i> Acceso Seguro
+                </button>
+
+                <div class="login-box" id="login-box-admin">
+                    <form id="login-form-admin">
+                        <input type="text" class="form-control" id="username-admin" placeholder="Usuario" required>
+                        <input type="password" class="form-control" id="password-admin" placeholder="Contraseña" required>
+                        <button type="submit" class="btn-access btn-login" style="background-color: var(--regio-secondary);">Ingresar al Panel</button>
+                        <p id="login-error-admin" class="error-msg"></p>
                     </form>
                 </div>
             </div>
@@ -238,31 +260,42 @@
     <!-- Scripts de la app -->
     <script src="app.js?v=16"></script>
     <script>
-        // Interfaz de login fluida (oculta el botón inicial y muestra el formulario)
-        document.getElementById('btn-show-login').addEventListener('click', function() {
+        // Interfaz de login fluida para Empleado
+        document.getElementById('btn-show-login-emp').addEventListener('click', function() {
             this.style.display = 'none';
-            document.getElementById('login-box').classList.add('active');
+            document.getElementById('login-box-emp').classList.add('active');
         });
 
-        // Lógica de login original para Empleado/Admin
-        document.getElementById('login-form').addEventListener('submit', function(e) {
+        // Interfaz de login fluida para Admin
+        document.getElementById('btn-show-login-admin').addEventListener('click', function() {
+            this.style.display = 'none';
+            document.getElementById('login-box-admin').classList.add('active');
+        });
+
+        function handleLogin(e, roleId, expectedRole) {
             e.preventDefault();
-            const userIn = document.getElementById('username').value.trim();
-            const passIn = document.getElementById('password').value.trim();
+            const userIn = document.getElementById(`username-${roleId}`).value.trim();
+            const passIn = document.getElementById(`password-${roleId}`).value.trim();
             
             const usuarios = getUsuarios();
             const user = usuarios.find(u => u.username === userIn && u.password === passIn);
             
-            if (user) {
+            if (user && user.role === expectedRole) {
                 setCurrentUser(user);
-                if (user.role === 'admin') {
-                    window.location.href = 'admin.html';
-                } else if (user.role === 'empleado') {
-                    window.location.href = 'empleado.html';
-                }
+                window.location.href = expectedRole === 'admin' ? 'admin.html' : 'empleado.html';
             } else {
-                document.getElementById('login-error').textContent = 'Usuario o contraseña incorrectos';
+                document.getElementById(`login-error-${roleId}`).textContent = 'Usuario, contraseña o rol incorrectos';
             }
+        }
+
+        // Lógica de login para Empleado
+        document.getElementById('login-form-emp').addEventListener('submit', function(e) {
+            handleLogin(e, 'emp', 'empleado');
+        });
+
+        // Lógica de login para Admin
+        document.getElementById('login-form-admin').addEventListener('submit', function(e) {
+            handleLogin(e, 'admin', 'admin');
         });
     </script>
 </body>

@@ -15,25 +15,53 @@
         </div>
     </div>
     
-    <div class="container">
-        <div class="card">
-            <h3>Crear Empleado</h3>
-            <form id="create-employee-form">
-                <div class="form-group">
-                    <label>Nombre de Usuario:</label>
-                    <input type="text" id="new-username" required>
+    <div class="container" style="max-width: 1000px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <!-- Columna Empleados -->
+            <div>
+                <div class="card">
+                    <h3>Gestión de Empleados</h3>
+                    <form id="create-employee-form">
+                        <div class="form-group">
+                            <label>Nombre de Usuario (DNI):</label>
+                            <input type="text" id="new-username" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Nombre Completo:</label>
+                            <input type="text" id="new-name" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Contraseña:</label>
+                            <input type="password" id="new-password" required>
+                        </div>
+                        <button type="submit" style="width: 100%;">Crear Empleado</button>
+                    </form>
                 </div>
-                <div class="form-group">
-                    <label>Contraseña:</label>
-                    <input type="password" id="new-password" required>
-                </div>
-                <button type="submit">Crear Empleado</button>
-            </form>
-        </div>
 
-        <div class="card mt-4">
-            <h3>Lista de Empleados</h3>
-            <ul id="employee-list" class="list"></ul>
+                <div class="card mt-4">
+                    <h3>Lista de Empleados</h3>
+                    <ul id="employee-list" class="list" style="padding:0; list-style:none;"></ul>
+                </div>
+            </div>
+
+            <!-- Columna Trámites -->
+            <div>
+                <div class="card">
+                    <h3>Gestión de Trámites</h3>
+                    <form id="create-tramite-form">
+                        <div class="form-group">
+                            <label>Nombre del Trámite:</label>
+                            <input type="text" id="new-tramite" placeholder="Ej: Pago de Impuestos" required>
+                        </div>
+                        <button type="submit" style="width: 100%; background-color: var(--regio-secondary);">Agregar Trámite</button>
+                    </form>
+                </div>
+
+                <div class="card mt-4">
+                    <h3>Tipos de Trámites</h3>
+                    <ul id="tramites-list" class="list" style="padding:0; list-style:none;"></ul>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -41,6 +69,7 @@
     <script>
         checkAuth('admin');
 
+        // ==== EMPLEADOS ====
         function loadEmployees() {
             const usuarios = getUsuarios();
             const list = document.getElementById('employee-list');
@@ -48,17 +77,41 @@
             
             usuarios.filter(u => u.role === 'empleado').forEach(u => {
                 const li = document.createElement('li');
-                li.textContent = u.username;
+                li.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; margin-bottom: 5px; background: #f9fafb; border-radius: 6px;';
+                
+                const info = document.createElement('div');
+                info.innerHTML = `<strong>${u.nombre || 'Sin nombre'}</strong> <br><small>Usr: ${u.username}</small>`;
+                
+                const actions = document.createElement('div');
+                actions.style.display = 'flex';
+                actions.style.gap = '5px';
+
+                const btnReset = document.createElement('button');
+                btnReset.textContent = 'Clave';
+                btnReset.style.cssText = 'background: #ecc94b; color: #744210; padding: 5px 10px; font-size: 0.85rem;';
+                btnReset.onclick = () => resetClave(u.username);
+
+                const btnDelete = document.createElement('button');
+                btnDelete.textContent = 'Eliminar';
+                btnDelete.style.cssText = 'background: #e53e3e; padding: 5px 10px; font-size: 0.85rem;';
+                btnDelete.onclick = () => deleteEmployee(u.username);
+
+                actions.appendChild(btnReset);
+                actions.appendChild(btnDelete);
+                
+                li.appendChild(info);
+                li.appendChild(actions);
                 list.appendChild(li);
             });
         }
 
         document.getElementById('create-employee-form').addEventListener('submit', function(e) {
             e.preventDefault();
-            const userIn = document.getElementById('new-username').value;
-            const passIn = document.getElementById('new-password').value;
+            const userIn = document.getElementById('new-username').value.trim();
+            const nameIn = document.getElementById('new-name').value.trim();
+            const passIn = document.getElementById('new-password').value.trim();
             
-            const usuarios = getUsuarios();
+            let usuarios = getUsuarios();
             if (usuarios.find(u => u.username === userIn)) {
                 alert('El usuario ya existe');
                 return;
@@ -66,6 +119,7 @@
 
             usuarios.push({
                 username: userIn,
+                nombre: nameIn,
                 password: passIn,
                 role: 'empleado'
             });
@@ -77,7 +131,87 @@
             loadEmployees();
         });
 
+        function resetClave(username) {
+            const nuevaClave = prompt(`Ingrese la nueva clave para el empleado ${username}:`);
+            if (nuevaClave) {
+                let usuarios = getUsuarios();
+                let user = usuarios.find(u => u.username === username);
+                if (user) {
+                    user.password = nuevaClave;
+                    saveUsuarios(usuarios);
+                    alert('Contraseña actualizada correctamente.');
+                }
+            }
+        }
+
+        function deleteEmployee(username) {
+            if(confirm(`¿Estás seguro de que deseas eliminar al empleado ${username}?`)) {
+                let usuarios = getUsuarios();
+                usuarios = usuarios.filter(u => u.username !== username || u.role !== 'empleado');
+                saveUsuarios(usuarios);
+                loadEmployees();
+            }
+        }
+
+        // ==== TRAMITES ====
+        function loadTramites() {
+            const tramites = getTramites();
+            const list = document.getElementById('tramites-list');
+            list.innerHTML = '';
+            
+            tramites.forEach(t => {
+                const li = document.createElement('li');
+                li.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; margin-bottom: 5px; background: #f9fafb; border-radius: 6px;';
+                
+                const info = document.createElement('span');
+                info.textContent = t.nombre;
+                
+                const btnDelete = document.createElement('button');
+                btnDelete.textContent = 'Eliminar';
+                btnDelete.style.cssText = 'background: #e53e3e; padding: 5px 10px; font-size: 0.85rem;';
+                btnDelete.onclick = () => deleteTramite(t.id);
+
+                li.appendChild(info);
+                li.appendChild(btnDelete);
+                list.appendChild(li);
+            });
+        }
+
+        document.getElementById('create-tramite-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const nombreIn = document.getElementById('new-tramite').value.trim();
+            if(!nombreIn) return;
+            
+            let tramites = getTramites();
+            const newId = nombreIn.toLowerCase().replace(/[^a-z0-9]/g, '');
+            
+            if (tramites.find(t => t.id === newId)) {
+                alert('Ya existe un trámite similar.');
+                return;
+            }
+
+            tramites.push({
+                id: newId,
+                nombre: nombreIn
+            });
+
+            saveTramites(tramites);
+            document.getElementById('create-tramite-form').reset();
+            loadTramites();
+        });
+
+        function deleteTramite(id) {
+            if(confirm(`¿Estás seguro de que deseas eliminar este trámite?`)) {
+                let tramites = getTramites();
+                tramites = tramites.filter(t => t.id !== id);
+                saveTramites(tramites);
+                loadTramites();
+            }
+        }
+
+        // Init
         loadEmployees();
+        loadTramites();
     </script>
 </body>
 </html>

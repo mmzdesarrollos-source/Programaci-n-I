@@ -30,12 +30,18 @@ if (!localStorage.getItem('bloqueos')) {
     localStorage.setItem('bloqueos', JSON.stringify([]));
 }
 
+if (!localStorage.getItem('tramites')) {
+    localStorage.setItem('tramites', JSON.stringify([{ id: 'licencia', nombre: 'Licencia de Conducir' }]));
+}
+
 function getUsuarios() { return JSON.parse(localStorage.getItem('usuarios')) || []; }
 function saveUsuarios(usuarios) { localStorage.setItem('usuarios', JSON.stringify(usuarios)); }
 function getTurnos() { return JSON.parse(localStorage.getItem('turnos')) || []; }
 function saveTurnos(turnos) { localStorage.setItem('turnos', JSON.stringify(turnos)); }
 function getBloqueos() { return JSON.parse(localStorage.getItem('bloqueos')) || []; }
 function saveBloqueos(bloqueos) { localStorage.setItem('bloqueos', JSON.stringify(bloqueos)); }
+function getTramites() { return JSON.parse(localStorage.getItem('tramites')) || []; }
+function saveTramites(tramites) { localStorage.setItem('tramites', JSON.stringify(tramites)); }
 function getCurrentUser() { return JSON.parse(localStorage.getItem('currentUser')); }
 function setCurrentUser(user) { localStorage.setItem('currentUser', JSON.stringify(user)); }
 

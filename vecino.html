@@ -27,7 +27,6 @@
                 <div class="form-group">
                     <label>Trámite / Área:</label>
                     <select id="tramite" required>
-                        <option value="licencia">Licencia de Conducir</option>
                     </select>
                 </div>
                 
@@ -138,8 +137,21 @@
             });
         }
 
-        // Inicializar Calendario
+        function cargarTramites() {
+            const tramites = getTramites();
+            const select = document.getElementById('tramite');
+            select.innerHTML = '';
+            tramites.forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t.id;
+                opt.textContent = t.nombre;
+                select.appendChild(opt);
+            });
+        }
+
+        // Inicializar Calendario y Trámites
         renderCalendar('vecino-calendar', handleDateSelect, 'vecino');
+        cargarTramites();
     </script>
 </body>
 </html>

@@ -237,6 +237,26 @@ button:hover {
     background-color: #f7fafc;
 }
 
+.calendar-day.day-full {
+    color: white;
+    background-color: #e53e3e; /* Rojo (var(--regio-danger)) */
+    cursor: not-allowed;
+    border-radius: 4px;
+    transform: scale(0.95);
+}
+
+.calendar-day.day-available {
+    color: white;
+    background-color: #38a169; /* Verde (var(--regio-success)) */
+    font-weight: 600;
+    border-radius: 4px;
+    transform: scale(0.95);
+}
+
+.calendar-day.day-available:hover {
+    background-color: #2f855a;
+}
+
 /* --- SLOTS (HORARIOS) STYLES --- */
 .slots-container {
     flex: 1;

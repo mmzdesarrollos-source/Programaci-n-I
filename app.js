@@ -110,17 +110,40 @@ function renderCalendar(elementId, onDateSelect, mode = 'vecino') {
 
     const bloqueosDelMes = getBloqueos();
     for (let i = 1; i <= daysInMonth; i++) {
-        // Formato YYYY-MM-DD
         const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
         const isPast = dateStr < todayStr;
         const diaCompletamenteBloqueado = bloqueosDelMes.some(b => b.fecha === dateStr && b.hora === 'todas');
         
-        // Si es vecino, no dejar elegir días pasados o completamente bloqueados
-        if((isPast || diaCompletamenteBloqueado) && mode === 'vecino') {
-            html += `<div class="calendar-day disabled" title="${diaCompletamenteBloqueado ? 'Día bloqueado o feriado' : ''}">${i}</div>`;
+        let extraClasses = '';
+        const isSelectedClass = (selectedDateString === dateStr) ? 'selected' : '';
+
+        if (mode === 'vecino') {
+            const turnosDelDia = getTurnos().filter(t => (t.fechaAsignada || t.fecha) === dateStr).length;
+            const bloqueosIndiv = bloqueosDelMes.filter(b => b.fecha === dateStr && b.hora !== 'todas').length;
+            const diaLleno = (turnosDelDia + bloqueosIndiv >= HORARIOS.length);
+            
+            if (isPast || diaCompletamenteBloqueado || diaLleno) {
+                // Pasados, bloqueados o sin horarios disponibles
+                html += `<div class="calendar-day disabled day-full" title="${diaCompletamenteBloqueado || diaLleno ? 'Sin horarios disponibles' : ''}">${i}</div>`;
+            } else {
+                // Disponible
+                html += `<div class="calendar-day day-available ${isSelectedClass}" data-date="${dateStr}">${i}</div>`;
+            }
         } else {
-            const isSelectedClass = (selectedDateString === dateStr) ? 'selected' : '';
-            html += `<div class="calendar-day ${isSelectedClass}" data-date="${dateStr}">${i}</div>`;
+            // Empleado (atención o config): Mantiene el diseño gris tradicional para bloqueados
+            if ((isPast || diaCompletamenteBloqueado) && mode === 'vecino') {
+                // Esta línea nunca se ejecutará porque mode no es vecino acá, 
+                // pero la lógica la reemplazamos abajo para mantener el diseño original si querés.
+            }
+
+            if(isPast && mode !== 'config') {
+                // En atencion mostramos gris el pasado, en config se puede querer ver el pasado (aunque idealmente no)
+                html += `<div class="calendar-day disabled" title="Día pasado">${i}</div>`;
+            } else if (diaCompletamenteBloqueado && mode !== 'config') {
+                html += `<div class="calendar-day disabled" title="Día bloqueado">${i}</div>`;
+            } else {
+                html += `<div class="calendar-day ${isSelectedClass}" data-date="${dateStr}">${i}</div>`;
+            }
         }
     }
 

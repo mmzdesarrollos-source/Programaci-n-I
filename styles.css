@@ -238,23 +238,25 @@ button:hover {
 }
 
 .calendar-day.day-full {
-    color: white;
-    background-color: #e53e3e; /* Rojo (var(--regio-danger)) */
+    color: #9b2c2c;
+    background-color: #fed7d7; /* Rojo pastel/suave */
     cursor: not-allowed;
     border-radius: 4px;
     transform: scale(0.95);
+    font-weight: 600;
 }
 
 .calendar-day.day-available {
-    color: white;
-    background-color: #38a169; /* Verde (var(--regio-success)) */
+    color: #22543d;
+    background-color: #c6f6d5; /* Verde pastel/suave */
     font-weight: 600;
     border-radius: 4px;
     transform: scale(0.95);
 }
 
 .calendar-day.day-available:hover {
-    background-color: #2f855a;
+    background-color: #9ae6b4;
+    color: #1c4532;
 }
 
 /* --- SLOTS (HORARIOS) STYLES --- */
@@ -281,39 +283,42 @@ button:hover {
     border-radius: 8px;
     font-weight: 600;
     cursor: pointer;
-    color: white;
     transition: all 0.2s;
 }
 
 .slot.disponible {
-    background-color: var(--regio-success); 
+    color: #22543d;
+    background-color: #c6f6d5; /* Verde pastel */
     border: 2px solid transparent;
 }
 .slot.disponible:hover {
+    background-color: #9ae6b4;
+    color: #1c4532;
     transform: translateY(-2px);
     box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 
 .slot.ocupado {
-    background-color: var(--regio-danger); 
+    color: #9b2c2c;
+    background-color: #fed7d7; /* Rojo pastel */
     cursor: not-allowed;
-    opacity: 0.8;
+    border: 2px solid transparent;
 }
 
 .slot.bloqueado {
-    background-color: #a0aec0; /* Gris */
-    border: 2px dashed #718096;
-    color: white;
+    color: #4a5568; /* Gris oscuro */
+    background-color: #e2e8f0; /* Gris pastel */
+    border: 2px dashed #a0aec0;
 }
 .slot.bloqueado:hover {
-    opacity: 0.8;
+    background-color: #cbd5e0;
 }
 
 .slot.seleccionado {
     border: 2px solid var(--regio-primary);
-    box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
     transform: scale(1.05);
-    background-color: #2f855a;
+    /* El background y color dependerá de si es rojo o verde, así que no lo forzamos acá, o lo oscurecemos un poquito */
 }
 
 .info-turno-detalle {
@@ -354,4 +359,42 @@ button:hover {
 }
 .badge.atendido {
     background: var(--regio-success);
+}
+
+/* --- PRINT STYLES --- */
+@media print {
+    body {
+        background-color: white !important;
+        margin: 0;
+        padding: 0;
+    }
+    .navbar, 
+    #form-card, 
+    .no-print {
+        display: none !important;
+    }
+    .container {
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        box-shadow: none !important;
+    }
+    .card {
+        box-shadow: none !important;
+        border: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    #constancia-card {
+        display: block !important;
+    }
+    #constancia-print-area {
+        border: 2px dashed #00A3C4 !important; /* var(--regio-primary) */
+        padding: 40px !important;
+        margin-top: 30px !important;
+        margin-bottom: 30px !important;
+    }
+    @page {
+        margin: 2cm;
+    }
 }

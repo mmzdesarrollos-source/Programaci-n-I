@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel de Empleado</title>
-    <link rel="stylesheet" href="styles.css?v=4">
+    <link rel="stylesheet" href="styles.css?v=22">
 </head>
 <body>
     <div class="navbar">
@@ -17,7 +17,7 @@
     
     <div class="container">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h2 style="margin: 0; color: white;">Panel de Control</h2>
+            <h2 style="margin: 0; color: var(--regio-primary);">Panel de Control</h2>
             <button id="btn-toggle-modo" onclick="toggleModoConfig()" style="background-color: var(--regio-primary); color: white; border: 2px solid var(--regio-secondary); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 500;">⚙️ Configurar Días Bloqueados</button>
         </div>
 
@@ -56,7 +56,7 @@
         </div>
     </div>
 
-    <script src="app.js?v=13"></script>
+    <script src="app.js?v=22"></script>
     <script>
         checkAuth('empleado');
 
@@ -77,8 +77,12 @@
             } else {
                 document.getElementById('btn-toggle-modo').innerHTML = "⚙️ Configurar Días Bloqueados";
                 document.getElementById('atencion-slots').innerHTML = '<p>Selecciona un día en el calendario para ver los horarios.</p>';
-                renderCalendar('atencion-calendar', (dateStr) => renderSlots('atencion-slots', dateStr, 'atencion'), 'atencion');
+                renderCalendar('atencion-calendar', (dateStr) => {
+                    renderSlots('atencion-slots', dateStr, 'atencion');
+                    loadListas();
+                }, 'atencion');
             }
+            loadListas();
         }
 
         function loadListas() {
@@ -89,8 +93,18 @@
             
             pendientesList.innerHTML = '';
             atendidosList.innerHTML = '';
-            
-            turnos.forEach(t => {
+
+            if (!selectedDateString || modoConfig) {
+                const msg = modoConfig ? 'Vuelve al panel de atención para ver las listas.' : 'Selecciona un día en el calendario arriba para ver sus turnos.';
+                pendientesList.innerHTML = `<li><small style="color: #666;">${msg}</small></li>`;
+                atendidosList.innerHTML = `<li><small style="color: #666;">${msg}</small></li>`;
+                return;
+            }
+
+            const turnosDelDia = turnos.filter(t => (t.fechaAsignada || t.fecha) === selectedDateString);
+            turnosDelDia.sort((a, b) => (a.horaAsignada || a.hora).localeCompare(b.horaAsignada || b.hora));
+
+            turnosDelDia.forEach(t => {
                 const li = document.createElement('li');
                 li.className = 'turno-item';
                 
@@ -122,8 +136,8 @@
                 }
             });
             
-            if (pendientesList.children.length === 0) pendientesList.innerHTML = '<li>No hay turnos pendientes.</li>';
-            if (atendidosList.children.length === 0) atendidosList.innerHTML = '<li>Aún no has atendido turnos.</li>';
+            if (pendientesList.children.length === 0) pendientesList.innerHTML = '<li>No hay turnos pendientes para este día.</li>';
+            if (atendidosList.children.length === 0) atendidosList.innerHTML = '<li>Aún no has atendido turnos este día.</li>';
         }
 
         window.atenderTurno = function(id) {
@@ -158,7 +172,10 @@
         }
 
         // Inicializar Calendario de Atención (Solo ver y atender)
-        renderCalendar('atencion-calendar', (dateStr) => renderSlots('atencion-slots', dateStr, 'atencion'), 'atencion');
+        renderCalendar('atencion-calendar', (dateStr) => {
+            renderSlots('atencion-slots', dateStr, 'atencion');
+            loadListas();
+        }, 'atencion');
         
         // Inicializar Calendario de Configuración (Bloqueos)
         renderCalendar('config-calendar', (dateStr) => renderSlots('config-slots', dateStr, 'config'), 'config');

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Solicitar Turno - Vecino</title>
-    <link rel="stylesheet" href="styles.css?v=7">
+    <link rel="stylesheet" href="styles.css?v=21">
 </head>
 <body>
     <div class="navbar">
@@ -13,7 +13,7 @@
     </div>
     
     <div class="container">
-        <div class="card">
+        <div class="card" id="form-card">
             <h3>Pide tu turno</h3>
             <form id="turno-form">
                 <div class="form-group">
@@ -46,36 +46,41 @@
             </form>
         </div>
 
-        <div class="card mt-4">
-            <h3>Mis turnos recientes</h3>
-            <ul id="mis-turnos-list" class="list"></ul>
+        <div id="constancia-card" class="card mt-4" style="display: none;">
+            <div id="constancia-print-area" style="padding: 20px; border: 2px dashed var(--regio-primary); border-radius: 8px; margin-bottom: 20px;">
+                <h3 style="color: var(--regio-success); text-align: center; margin-top: 0;">¡Turno Confirmado!</h3>
+                <p><strong>Nombre y Apellido:</strong> <span id="const-nombre"></span></p>
+                <p><strong>DNI:</strong> <span id="const-dni"></span></p>
+                <p><strong>Trámite:</strong> <span id="const-tramite"></span></p>
+                <p><strong>Fecha asignada:</strong> <span id="const-dia"></span></p>
+                <p><strong>Horario:</strong> <span id="const-hora"></span></p>
+                <p style="text-align: center; margin-top: 20px; font-size: 13px; color: #666;">Por favor, presenta esta constancia en mesa de entrada el día de tu turno.</p>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: center;" class="no-print">
+                <button onclick="descargarTxt()" style="background-color: var(--regio-secondary); flex: 1;">📄 Descargar .TXT</button>
+                <button onclick="window.print()" style="background-color: var(--regio-primary); flex: 1;">🖨️ Imprimir / PDF</button>
+            </div>
         </div>
     </div>
 
-    <script src="app.js?v=14"></script>
+    <script src="app.js?v=21"></script>
     <script>
-        function loadMisTurnos() {
-            const turnos = getTurnos();
-            const list = document.getElementById('mis-turnos-list');
-            list.innerHTML = '';
+        function descargarTxt() {
+            const nombre = document.getElementById('const-nombre').innerText;
+            const dni = document.getElementById('const-dni').innerText;
+            const tramite = document.getElementById('const-tramite').innerText;
+            const dia = document.getElementById('const-dia').innerText;
+            const hora = document.getElementById('const-hora').innerText;
             
-            const misUltimos = turnos.slice(-5).reverse();
+            const texto = `CONSTANCIA DE TURNO - MUNICIPALIDAD\n-----------------------------------\nNombre: ${nombre}\nDNI: ${dni}\nTrámite: ${tramite}\nFecha: ${dia}\nHorario: ${hora}\n\nPresentar esta constancia en mesa de entrada el día de su turno.`;
             
-            if (misUltimos.length === 0) {
-                list.innerHTML = '<li>No has solicitado turnos aún.</li>';
-                return;
-            }
-
-            misUltimos.forEach(t => {
-                const li = document.createElement('li');
-                const fechaMostrar = t.fechaAsignada || t.fecha;
-                const horaMostrar = t.horaAsignada || t.hora;
-                
-                li.innerHTML = `<strong>${t.tramite.toUpperCase()}</strong> - ${t.nombre} <br> 
-                                <small>Día: ${fechaMostrar} | Hora: ${horaMostrar}</small> <br>
-                                Estado: <span class="badge ${t.estado}">${t.estado}</span>`;
-                list.appendChild(li);
-            });
+            const blob = new Blob([texto], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Constancia_Turno_${dni}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
         }
 
         document.getElementById('turno-form').addEventListener('submit', function(e) {
@@ -90,42 +95,51 @@
 
             const nombre = document.getElementById('nombre-vecino').value;
             const dni = document.getElementById('dni-vecino').value;
-            const tramite = document.getElementById('tramite').value;
+            const tramiteSelect = document.getElementById('tramite');
+            const tramiteText = tramiteSelect.options[tramiteSelect.selectedIndex].text;
             
             const turnos = getTurnos();
             turnos.push({
                 id: Date.now(),
                 nombre,
                 dni,
-                tramite,
+                tramite: tramiteSelect.value,
                 fecha: selectedDateString,
                 hora: selectedHora,
-                estado: 'pendiente' // El vecino lo pide, pero podemos considerarlo ya ocupado en esa fecha/hora
+                estado: 'pendiente'
             });
 
             saveTurnos(turnos);
-            alert('¡Turno solicitado con éxito!');
+            
+            // Poblar Constancia
+            document.getElementById('const-nombre').innerText = nombre;
+            document.getElementById('const-dni').innerText = dni;
+            document.getElementById('const-tramite').innerText = tramiteText;
+            document.getElementById('const-dia').innerText = selectedDateString;
+            document.getElementById('const-hora').innerText = selectedHora;
+            
+            // Mostrar constancia y hacer scroll
+            const constanciaCard = document.getElementById('constancia-card');
+            constanciaCard.style.display = 'block';
+            constanciaCard.scrollIntoView({ behavior: 'smooth' });
             
             document.getElementById('turno-form').reset();
             selectedDateString = null;
             selectedHora = null;
             
             // Re-render calendario para que se ponga rojo
-            renderCalendar('vecino-calendar', handleDateSelect, false);
+            renderCalendar('vecino-calendar', handleDateSelect, 'vecino');
             document.getElementById('vecino-slots').innerHTML = '<p>Selecciona un día en el calendario.</p>';
-            
-            loadMisTurnos();
         });
 
         function handleDateSelect(dateStr) {
-            renderSlots('vecino-slots', dateStr, false, (hora) => {
+            renderSlots('vecino-slots', dateStr, 'vecino', (hora) => {
                 // Hora seleccionada por el vecino
             });
         }
 
         // Inicializar Calendario
-        renderCalendar('vecino-calendar', handleDateSelect, false);
-        loadMisTurnos();
+        renderCalendar('vecino-calendar', handleDateSelect, 'vecino');
     </script>
 </body>
 </html>

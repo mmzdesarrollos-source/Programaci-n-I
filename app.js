@@ -87,9 +87,9 @@ function renderCalendar(elementId, onDateSelect, mode = 'vecino') {
 
     let html = `
         <div class="calendar-header">
-            <button type="button" id="btn-prev-month">&lt;</button>
+            <button type="button" id="btn-prev-month-${elementId}">&lt;</button>
             <span>${monthNames[month]} ${year}</span>
-            <button type="button" id="btn-next-month">&gt;</button>
+            <button type="button" id="btn-next-month-${elementId}">&gt;</button>
         </div>
         <div class="calendar-grid">
             <div class="calendar-day-name">Dom</div>
@@ -112,38 +112,46 @@ function renderCalendar(elementId, onDateSelect, mode = 'vecino') {
     for (let i = 1; i <= daysInMonth; i++) {
         const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
         const isPast = dateStr < todayStr;
-        const diaCompletamenteBloqueado = bloqueosDelMes.some(b => b.fecha === dateStr && b.hora === 'todas');
         
-        let extraClasses = '';
-        const isSelectedClass = (selectedDateString === dateStr) ? 'selected' : '';
+        // Fines de semana por defecto bloqueados, a menos que tengan 'desbloqueado'
+        const dayOfWeek = new Date(year, month, i).getDay();
+        const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+        const explicitlyUnblocked = bloqueosDelMes.some(b => b.fecha === dateStr && b.hora === 'desbloqueado');
+        
+        let diaCompletamenteBloqueado = false;
+        if (bloqueosDelMes.some(b => b.fecha === dateStr && b.hora === 'todas')) {
+            diaCompletamenteBloqueado = true;
+        } else if (isWeekend && !explicitlyUnblocked) {
+            diaCompletamenteBloqueado = true;
+        }
 
-        if (mode === 'vecino') {
-            const turnosDelDia = getTurnos().filter(t => (t.fechaAsignada || t.fecha) === dateStr).length;
-            const bloqueosIndiv = bloqueosDelMes.filter(b => b.fecha === dateStr && b.hora !== 'todas').length;
-            const diaLleno = (turnosDelDia + bloqueosIndiv >= HORARIOS.length);
-            
-            if (isPast || diaCompletamenteBloqueado || diaLleno) {
-                // Pasados, bloqueados o sin horarios disponibles
-                html += `<div class="calendar-day disabled day-full" title="${diaCompletamenteBloqueado || diaLleno ? 'Sin horarios disponibles' : ''}">${i}</div>`;
-            } else {
-                // Disponible
-                html += `<div class="calendar-day day-available ${isSelectedClass}" data-date="${dateStr}">${i}</div>`;
+        const turnosDelDia = getTurnos().filter(t => (t.fechaAsignada || t.fecha) === dateStr).length;
+        const bloqueosIndiv = bloqueosDelMes.filter(b => b.fecha === dateStr && b.hora !== 'todas' && b.hora !== 'desbloqueado').length;
+        const diaLleno = (turnosDelDia + bloqueosIndiv >= HORARIOS.length);
+
+        let statusClass = '';
+        let isClickable = true;
+
+        if (isPast) {
+            statusClass = 'disabled';
+            isClickable = false;
+        } else if (diaCompletamenteBloqueado || diaLleno) {
+            statusClass = 'day-full'; // Rojo
+            // Solo los empleados pueden hacer clic en días rojos (para ver turnos o desbloquearlos)
+            if (mode === 'vecino') {
+                statusClass += ' disabled';
+                isClickable = false;
             }
         } else {
-            // Empleado (atención o config): Mantiene el diseño gris tradicional para bloqueados
-            if ((isPast || diaCompletamenteBloqueado) && mode === 'vecino') {
-                // Esta línea nunca se ejecutará porque mode no es vecino acá, 
-                // pero la lógica la reemplazamos abajo para mantener el diseño original si querés.
-            }
+            statusClass = 'day-available'; // Verde
+        }
 
-            if(isPast && mode !== 'config') {
-                // En atencion mostramos gris el pasado, en config se puede querer ver el pasado (aunque idealmente no)
-                html += `<div class="calendar-day disabled" title="Día pasado">${i}</div>`;
-            } else if (diaCompletamenteBloqueado && mode !== 'config') {
-                html += `<div class="calendar-day disabled" title="Día bloqueado">${i}</div>`;
-            } else {
-                html += `<div class="calendar-day ${isSelectedClass}" data-date="${dateStr}">${i}</div>`;
-            }
+        const isSelectedClass = (selectedDateString === dateStr) ? 'selected' : '';
+
+        if (!isClickable) {
+            html += `<div class="calendar-day ${statusClass}" title="${isPast ? 'Día pasado' : 'Sin disponibilidad'}">${i}</div>`;
+        } else {
+            html += `<div class="calendar-day ${statusClass} ${isSelectedClass}" data-date="${dateStr}">${i}</div>`;
         }
     }
 
@@ -151,13 +159,13 @@ function renderCalendar(elementId, onDateSelect, mode = 'vecino') {
     container.innerHTML = html;
 
     // Listeners para cambiar de mes
-    document.getElementById('btn-prev-month').addEventListener('click', (e) => {
+    document.getElementById(`btn-prev-month-${elementId}`).addEventListener('click', (e) => {
         e.preventDefault();
         currentDate.setMonth(currentDate.getMonth() - 1);
         renderCalendar(elementId, onDateSelect, mode);
     });
     
-    document.getElementById('btn-next-month').addEventListener('click', (e) => {
+    document.getElementById(`btn-next-month-${elementId}`).addEventListener('click', (e) => {
         e.preventDefault();
         currentDate.setMonth(currentDate.getMonth() + 1);
         renderCalendar(elementId, onDateSelect, mode);
@@ -190,7 +198,19 @@ function renderSlots(elementId, dateStr, mode = 'vecino', onSlotSelect = null) {
 
     const bloqueos = getBloqueos();
     const bloqueosDelDia = bloqueos.filter(b => b.fecha === dateStr);
-    const diaCompletoBloqueado = bloqueosDelDia.find(b => b.hora === 'todas');
+    
+    // Check fines de semana
+    const [y, m, d] = dateStr.split('-');
+    const dayOfWeek = new Date(y, m - 1, d).getDay();
+    const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+    const explicitlyUnblocked = bloqueosDelDia.some(b => b.hora === 'desbloqueado');
+    
+    let diaCompletoBloqueado = false;
+    if (bloqueosDelDia.some(b => b.hora === 'todas')) {
+        diaCompletoBloqueado = true;
+    } else if (isWeekend && !explicitlyUnblocked) {
+        diaCompletoBloqueado = true;
+    }
 
     let btnHoraText = "Bloquear Horario";
     if (selectedHora) {
@@ -212,7 +232,7 @@ function renderSlots(elementId, dateStr, mode = 'vecino', onSlotSelect = null) {
 
     HORARIOS.forEach(hora => {
         const turnoOcupado = turnosDelDia.find(t => (t.horaAsignada || t.hora) === hora);
-        const isBloqueado = diaCompletoBloqueado || bloqueosDelDia.find(b => b.hora === hora);
+        const isBloqueado = diaCompletoBloqueado || bloqueosDelDia.find(b => b.hora === hora && b.hora !== 'desbloqueado');
         
         if (turnoOcupado) {
             // Rojo = Ocupado
@@ -243,9 +263,13 @@ function renderSlots(elementId, dateStr, mode = 'vecino', onSlotSelect = null) {
             btnDia.addEventListener('click', () => {
                 let bl = getBloqueos();
                 if (diaCompletoBloqueado) {
+                    // Desbloquear
                     bl = bl.filter(b => !(b.fecha === dateStr && b.hora === 'todas'));
+                    if (isWeekend) bl.push({ fecha: dateStr, hora: 'desbloqueado' });
                 } else {
+                    // Bloquear
                     bl.push({ fecha: dateStr, hora: 'todas' });
+                    bl = bl.filter(b => !(b.fecha === dateStr && b.hora === 'desbloqueado'));
                 }
                 saveBloqueos(bl);
                 selectedHora = null; // Reset selection

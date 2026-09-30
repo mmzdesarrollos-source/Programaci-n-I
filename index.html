@@ -206,7 +206,7 @@
                     <h2>Portal Vecino</h2>
                     <p>Accede al almanaque interactivo para consultar los días y horarios disponibles, y solicita tu turno de manera rápida.</p>
                 </div>
-                <button class="btn-access" onclick="window.location.href='vecino.html'">
+                <button class="btn-access" onclick="window.open('vecino.html', '_blank')">
                     <i class="fas fa-calendar-check"></i> Solicitar Turno
                 </button>
             </div>
@@ -282,7 +282,8 @@
             
             if (user && user.role === expectedRole) {
                 setCurrentUser(user);
-                window.location.href = expectedRole === 'admin' ? 'admin.html' : 'empleado.html';
+                const url = expectedRole === 'admin' ? 'admin.html' : 'empleado.html';
+                window.open(url, '_blank');
             } else {
                 document.getElementById(`login-error-${roleId}`).textContent = 'Usuario, contraseña o rol incorrectos';
             }
